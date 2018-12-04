@@ -37,7 +37,7 @@ fn solve_a(filename: &str) -> u64 {
     let entries = parse_all_entries(filename);
     let gs = parse_guards(&entries);
     let (gid, _) = most_sleep(&gs);
-    let (most_common, minutes) = most_common_minute(&gs[&gid]);
+    let (most_common, _minutes) = most_common_minute(&gs[&gid]);
     most_common * gid
 }
 
@@ -45,7 +45,7 @@ fn solve_b(filename: &str) -> u64 {
     let entries = parse_all_entries(filename);
     let gs = parse_guards(&entries);
     let (gid, minute, _) = max_slept_same_minute(&gs);
-    return gid * minute;
+    gid * minute
 }
 
 /// minute, slept in that minute
@@ -57,12 +57,11 @@ fn most_common_minute(g: &Guard) -> (u64, u64) {
 
     for (start, end) in &g.sleeps {
         let st: u64 = start.minute;
-        let ed: u64;
-        if start.minute > end.expect("minute").minute {
-            ed = end.unwrap().minute + 60;
+        let ed = if start.minute > end.expect("minute").minute {
+            end.unwrap().minute + 60
         } else {
-            ed = end.unwrap().minute;
-        }
+            end.unwrap().minute
+        };
 
         for i in 0..ed - st {
             let idx = (i + st) % 60;
@@ -70,14 +69,13 @@ fn most_common_minute(g: &Guard) -> (u64, u64) {
         }
     }
 
-    let max = minutes.iter().enumerate().fold((0, 0), |(im, iv), (i, v)| {
+    minutes.iter().enumerate().fold((0, 0), |(im, iv), (i, v)| {
         if *v > iv {
             (i as u64, *v)
         } else {
             (im as u64, iv)
         }
-    });
-    max
+    })
 }
 
 fn max_slept_same_minute(gs: &HashMap<u64, Guard>) -> (u64, u64, u64) {
@@ -88,7 +86,7 @@ fn max_slept_same_minute(gs: &HashMap<u64, Guard>) -> (u64, u64, u64) {
         let (minute, amount) = most_common_minute(g);
         if amount > most_time {
             most_id = *gid;
-            most_time = amount; 
+            most_time = amount;
             most_minute = minute;
         }
     }
@@ -127,23 +125,23 @@ fn parse_guards(entries: &[Entry]) -> HashMap<u64, Guard> {
     let mut current_guard: u64 = 0;
     for entry in entries {
         match entry {
-            Entry::begin(id, time) => {
+            Entry::Begin(id, _time) => {
                 gmap.entry(*id).or_insert(Guard {
                     id: *id,
                     sleeps: Vec::new(),
                 });
                 current_guard = *id;
             }
-            Entry::sleep(t) => {
+            Entry::Sleep(t) => {
                 gmap.get_mut(&current_guard)
-                    .expect(&format!("sleep no guard {}", current_guard))
+                    .unwrap_or_else(|| panic!("sleep no guard {}", current_guard))
                     .sleeps
                     .push((*t, None));
             }
-            Entry::wake(t) => {
+            Entry::Wake(t) => {
                 if let Some(last) = gmap
                     .get_mut(&current_guard)
-                    .expect("no_guard")
+                    .unwrap_or_else(|| panic!("wake no gauard {}", current_guard))
                     .sleeps
                     .last_mut()
                 {
@@ -153,7 +151,7 @@ fn parse_guards(entries: &[Entry]) -> HashMap<u64, Guard> {
             }
         }
     }
-    return gmap;
+    gmap
 }
 
 fn parse_all_entries(filename: &str) -> Vec<Entry> {
@@ -165,25 +163,25 @@ fn parse_all_entries(filename: &str) -> Vec<Entry> {
         .collect();
     entries.sort_by(|e1, e2| {
         let t1 = match e1 {
-            Entry::begin(id, t) => t,
-            Entry::wake(t) => t,
-            Entry::sleep(t) => t,
+            Entry::Begin(_id, t) => t,
+            Entry::Wake(t) => t,
+            Entry::Sleep(t) => t,
         };
         let t2 = match e2 {
-            Entry::begin(id, t) => t,
-            Entry::wake(t) => t,
-            Entry::sleep(t) => t,
+            Entry::Begin(_id, t) => t,
+            Entry::Wake(t) => t,
+            Entry::Sleep(t) => t,
         };
-        return t1.val().cmp(&t2.val());
+        t1.val().cmp(&t2.val())
     });
     entries
 }
 
 #[derive(Debug, PartialEq)]
 enum Entry {
-    begin(u64, TimeEntry), // id
-    sleep(TimeEntry),
-    wake(TimeEntry),
+    Begin(u64, TimeEntry), // id
+    Sleep(TimeEntry),
+    Wake(TimeEntry),
 }
 
 impl FromStr for Entry {
@@ -193,9 +191,8 @@ impl FromStr for Entry {
         lazy_static! {
             static ref begin: Regex =
                 Regex::new(r"Guard #(?P<ID>\d*) begins shift").expect("failed regex");
-            static ref wake: Regex = Regex::new(r"wakes up").expect("failed regex");
-            static ref sleep: Regex = Regex::new(r"falls asleep").expect("failed regex");
         };
+        let wake = "wakes up";
 
         let time_end = 18;
         let time_st = &entry[..time_end];
@@ -210,11 +207,11 @@ impl FromStr for Entry {
                 .unwrap()
                 .as_str()
                 .parse()?;
-            return Ok(Entry::begin(id, time?));
-        } else if wake.is_match(entry) {
-            return Ok(Entry::wake(time?));
+            Ok(Entry::Begin(id, time?))
+        } else if wake == entry {
+            Ok(Entry::Wake(time?))
         } else {
-            return Ok(Entry::sleep(time?));
+            Ok(Entry::Sleep(time?))
         }
     }
 }
@@ -260,11 +257,11 @@ impl FromStr for TimeEntry {
 
 impl TimeEntry {
     fn val(self) -> u64 {
-        return self.minute
+        self.minute
             + self.hour * 60
             + self.day * 24 * 60
             + self.month * 31 * 24 * 60
-            + self.year * 365 * 31 * 24 * 60;
+            + self.year * 365 * 31 * 24 * 60
     }
     fn since(self, other: &TimeEntry) -> u64 {
         self.val() - other.val()
@@ -297,7 +294,7 @@ mod tests {
         let parsed = st.parse::<Entry>().unwrap();
         assert_eq!(
             parsed,
-            Entry::begin(
+            Entry::Begin(
                 10,
                 TimeEntry {
                     year: 1518,
