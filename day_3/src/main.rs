@@ -11,7 +11,10 @@ fn main() {
     let fab_map = map_claims(&claims);
     let num = count_overlapping(&fab_map);
     println!("overlapping: {}", num);
-    println!("id of doesn't overlap: {}", doesnt_overlap(&claims, &fab_map).unwrap());
+    println!(
+        "id of doesn't overlap: {}",
+        doesnt_overlap(&claims, &fab_map).unwrap()
+    );
 }
 
 /// return the id of the claim that doesn't overlap
@@ -43,8 +46,8 @@ fn map_claims(claims: &[Claim]) -> Vec<Vec<u32>> {
     }
 
     for claim in claims {
-        for r in claim.top..claim.top+claim.height {
-            for c in claim.left..claim.left+claim.width {
+        for r in claim.top..claim.top + claim.height {
+            for c in claim.left..claim.left + claim.width {
                 fab_map[r as usize][c as usize] += 1;
             }
         }
@@ -53,7 +56,10 @@ fn map_claims(claims: &[Claim]) -> Vec<Vec<u32>> {
 }
 
 fn count_overlapping(fab_map: &[Vec<u32>]) -> u32 {
-    fab_map.iter().map(|column| column.iter().filter(|val| **val > 1).count() as u32).sum()
+    fab_map
+        .iter()
+        .map(|column| column.iter().filter(|val| **val > 1).count() as u32)
+        .sum()
 }
 
 fn get_claims(filename: &str) -> Vec<Claim> {
