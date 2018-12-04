@@ -1,7 +1,8 @@
 #![feature(duration_as_u128)]
 extern crate regex;
-#[macro_use]
-extern crate simple_error;
+#[macro_use] extern crate simple_error;
+#[macro_use] extern crate lazy_static;
+
 use regex::Regex;
 use std::error::Error;
 use std::io::{prelude::*, BufReader};
@@ -90,14 +91,17 @@ struct Claim {
     top: u32,
 }
 
+
 impl FromStr for Claim {
     type Err = Box<dyn Error>;
 
     fn from_str(claim: &str) -> Result<Self, Self::Err> {
-        let re = Regex::new(
-            r"#(?P<id>\d*) @ (?P<left>\d*),(?P<top>\d*): (?P<width>\d*)x(?P<height>\d*)",
-        )
-        .expect("bad regex");
+        lazy_static! {
+                static ref re: Regex = Regex::new(
+                r"#(?P<id>\d*) @ (?P<left>\d*),(?P<top>\d*): (?P<width>\d*)x(?P<height>\d*)",
+            )
+            .expect("bad regex");
+        }
         let caps = match re.captures(claim) {
             Some(caps) => caps,
             _ => bail!("failed to parse capture"),
