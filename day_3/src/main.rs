@@ -1,3 +1,4 @@
+#![feature(duration_as_u128)]
 extern crate regex;
 #[macro_use]
 extern crate simple_error;
@@ -5,21 +6,31 @@ use regex::Regex;
 use std::error::Error;
 use std::io::{prelude::*, BufReader};
 use std::str::FromStr;
+use std::time::Instant;
 
 fn main() {
+    let start = Instant::now();
     let claims = get_claims("input.txt");
     let fab_map = map_claims(&claims);
     let num = count_overlapping(&fab_map);
+    let id = doesnt_overlap(&claims, &fab_map).unwrap();
+    let end = Instant::now();
     println!("overlapping: {}", num);
-    println!(
-        "id of doesn't overlap: {}",
-        doesnt_overlap(&claims, &fab_map).unwrap()
-    );
+    println!("id of doesn't overlap: {}", id);
+
+    println!("Finished in : {} ms", end.duration_since(start).as_millis());
 }
 
 /// return the id of the claim that doesn't overlap
 /// that is, all the squares are equal to 1
-fn doesnt_overlap(claims: &[Claim], fab_map: &[Vec<u32>]) -> Option<u32> {
+/// Note: the impl std ops index says that something must implement the index operator for a usize
+/// and give back a u32. This is more simply just a Vec<Vec<u32>>, but by saying
+/// its a &[impl Index<>] we can have any slice of any thing that we can index into...
+/// basically just an interseting language feature
+fn doesnt_overlap(
+    claims: &[Claim],
+    fab_map: &[impl std::ops::Index<usize, Output = u32>],
+) -> Option<u32> {
     'claim_loop: for claim in claims {
         for r in claim.top..claim.top + claim.height {
             for c in claim.left..claim.left + claim.width {
