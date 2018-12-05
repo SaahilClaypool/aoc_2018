@@ -1,4 +1,4 @@
-#![feature(duration_as_u128)]
+// #![feature(duration_as_u128)]
 extern crate lazy_static;
 extern crate regex;
 extern crate simple_error;
@@ -24,12 +24,12 @@ fn main() {
     let start = Instant::now();
     let res = solve_a("input.txt");
     let end = Instant::now();
-    println!("Finished in : {} ms", end.duration_since(start).as_millis());
+    println!("Finished in : {} ms", end.duration_since(start).subsec_millis());
     println!("result is {}", res);
     let start = Instant::now();
     let res = solve_b("input.txt");
     let end = Instant::now();
-    println!("Finished in : {} ms", end.duration_since(start).as_millis());
+    println!("Finished in : {} ms", end.duration_since(start).subsec_millis());
     println!("result is {}", res);
 }
 
