@@ -28,7 +28,6 @@ fn main() {
     println!("answer is {}", count);
 }
 
-
 const REASONABLE_MAX: i32 = 10000;
 
 type Point = (i32, i32);
@@ -77,10 +76,10 @@ fn make_map(points: &[Point]) -> u32 {
         }
     }
     let mut max_close = 0;
-    let mut max_point = (1000,1000);
+    let mut max_point = (1000, 1000);
     for p in points {
         let count_close = close_map.iter().filter(|closest| *closest == p).count() as i32;
-        if count_close > max_close  && count_close < REASONABLE_MAX {
+        if count_close > max_close && count_close < REASONABLE_MAX {
             max_close = count_close;
             max_point = *p;
         }
@@ -128,22 +127,19 @@ fn get_bounds(points: &[Point]) -> (Point, Point) {
 }
 
 fn safe_reagion(points: &[Point], cutoff: i32) -> i32 {
-    let extend = 100; 
-    // calculate the 
+    let extend = 100;
+    // calculate the
     let ((xmin, xmax), (ymin, ymax)) = get_bounds(points);
     let mut reagion = 0;
-    for x in xmin - extend..xmax + extend{
-        for y in ymin - extend ..ymax + extend{
-            let total_distance: i32 = points.iter().map(|p| {
-                p.dist(&(x,y)) 
-            }).sum();
+    for x in xmin - extend..xmax + extend {
+        for y in ymin - extend..ymax + extend {
+            let total_distance: i32 = points.iter().map(|p| p.dist(&(x, y))).sum();
             if total_distance < cutoff {
                 reagion += 1
             }
         }
     }
     return reagion;
-
 }
 
 #[cfg(test)]
@@ -161,7 +157,7 @@ mod tests {
         let count = make_map(&parsed);
         assert_eq!(count, 17);
     }
-    
+
     #[test]
     fn test_safe() {
         let parsed = parse_input("test.txt").unwrap();
