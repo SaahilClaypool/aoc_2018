@@ -1,13 +1,22 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 fn main() {
-    println!("Hello, world!");
-    let input = include_str!("input.txt");
-    let mut input: Map = input.parse().unwrap();
-    println!("Map:\n{}", input.to_string());
+    let input_st = include_str!("input.txt");
+    let mut input: Map = input_st.parse().unwrap();
+    // println!("Map:\n{}", input.to_string());
     input.fill(&input.spring.clone());
-    println!("Map:\n{}", input.to_string());
+    // println!("Map:\n{}", input.to_string());
+    let og_input: Map = input_st.parse().unwrap();
+    for (l, t) in og_input.squares.iter() {
+        match input.squares.get(l) {
+            None => panic!("How did I lose a spot"),
+            Some(new_t) => if new_t != t {
+                panic!("Jeez, changed {:?} from {} to {}", l, char::from(t), char::from(new_t));
+            }
+        }
+    }
     println!("water reaches: {}", input.count());
+    println!("water holds: {}", input.count_water());
 }
 
 #[derive(Hash, Eq, PartialEq, Debug, Copy, Clone)]
@@ -30,7 +39,7 @@ impl FromStr for Map {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut squares = HashMap::new();
         let mut min_x = 1000;
-        let mut min_y = 0;
+        let mut min_y = 1000;
         let mut max_x = 0;
         let mut max_y = 0;
         for line in s.lines() {
@@ -67,11 +76,11 @@ impl FromStr for Map {
             squares,
             spring: Loc { x: 500, y: 0 },
             min: Loc {
-                x: min_x - 1,
+                x: min_x - 2,
                 y: min_y,
             },
             max: Loc {
-                x: max_x + 1,
+                x: max_x + 2,
                 y: max_y,
             },
         })
@@ -79,6 +88,33 @@ impl FromStr for Map {
 }
 
 impl Map {
+    fn is_dry(&self, loc: &Loc) -> bool {
+        match self.squares.get(loc) {
+            Some(t) => match t {
+                Type::dry => true,
+                _ => false,
+            },
+            None => false,
+        }
+    }
+    fn is_clay(&self, loc: &Loc) -> bool {
+        match self.squares.get(loc) {
+            Some(t) => match t {
+                Type::clay => true,
+                _ => false,
+            },
+            None => false,
+        }
+    }
+    fn is_water(&self, loc: &Loc) -> bool {
+        match self.squares.get(loc) {
+            Some(t) => match t {
+                Type::water => true,
+                _ => false,
+            },
+            None => false,
+        }
+    }
     /// from the start point, fill the first container hit. return list of new spouts
     fn fill(&mut self, start: &Loc) -> Option<usize> {
         // find deepest clay
@@ -86,16 +122,15 @@ impl Map {
         eprintln!("start.y: {} max.y {}", start.y, self.max.y);
         for y in start.y + 1..=self.max.y {
             let loc = Loc { x: start.x, y };
-            eprintln!("checking {:?}", deepest);
             match self.squares.get(&loc) {
-                Some(t)  => match t {
+                Some(t) => match t {
                     Type::clay | Type::water => {
                         deepest = loc;
                         deepest.y -= 1;
                         break;
-                    },
+                    }
                     _ => {}
-                }
+                },
                 _ => {}
             }
             if !self.squares.contains_key(&loc) {
@@ -121,20 +156,32 @@ impl Map {
             y -= 1;
         }
 
-        let spill = self.get_out_flow(&Loc { x: start.x, y });
+        let spill_loc = Loc { x: start.x, y };
+        let spill = self.get_out_flow(&spill_loc);
+        eprintln!("spill from {:?} is {:?}", spill_loc, spill);
         for s in &spill {
             self.squares.insert(*s, Type::dry);
         }
+        match self.squares.get(&spill_loc) {
+            Some(_t) => {}
+            None => {
+                self.squares.insert(spill_loc, Type::dry);
+            }
+        };
         if spill.len() > 0 {
             let mut left = spill[0];
+            let mut below = left;
             left.x -= 1;
-            if !self.squares.contains_key(&left) {
+            below.y += 1;
+            if !self.is_dry(&below) && !self.squares.contains_key(&left) {
                 self.squares.insert(left.clone(), Type::dry);
                 self.fill(&left);
             }
             let mut right = spill[spill.len() - 1];
+            let mut below = right;
             right.x += 1;
-            if !self.squares.contains_key(&right) {
+            below.y += 1;
+            if !self.is_dry(&below) && !self.squares.contains_key(&right) {
                 self.squares.insert(right.clone(), Type::dry);
                 self.fill(&right);
             }
@@ -147,9 +194,9 @@ impl Map {
     fn get_out_flow(&self, l: &Loc) -> Vec<Loc> {
         let mut left = *l;
         left.x -= 1;
-        let mut spots = vec![];
+        let mut spots = vec![*l];
         while left.x > self.min.x {
-            if self.squares.contains_key(&left) {
+            if self.is_clay(&left) || self.is_water(&left) {
                 break;
             }
             let mut below = left;
@@ -164,7 +211,7 @@ impl Map {
         let mut right = *l;
         right.x += 1;
         while right.x < self.max.x {
-            if self.squares.contains_key(&right) {
+            if self.is_clay(&right) || self.is_water(&right) {
                 break;
             }
             let mut below = right;
@@ -188,8 +235,19 @@ impl Map {
         while x >= self.min.x {
             let mut below = Loc { x, y };
             below.y += 1;
-            if x == self.min.x || !self.squares.contains_key(&below) {
+            if x == self.min.x {
                 return None;
+            }
+            match self.squares.get(&below) {
+                Some(t) => match t {
+                    Type::dry => {
+                        return None;
+                    }
+                    _ => {}
+                },
+                None => {
+                    return None;
+                }
             }
             let loc = Loc { x, y };
 
@@ -211,13 +269,30 @@ impl Map {
         while x <= self.max.x {
             let mut below = Loc { x, y };
             below.y += 1;
-            if x == self.max.x || !self.squares.contains_key(&below) {
+            if x == self.max.x {
                 return None;
+            }
+            match self.squares.get(&below) {
+                Some(t) => match t {
+                    Type::dry => {
+                        return None;
+                    }
+                    _ => {}
+                },
+                None => {
+                    return None;
+                }
             }
             let loc = Loc { x, y };
 
-            if self.squares.contains_key(&loc) {
-                break;
+            match self.squares.get(&loc) {
+                Some(t) => match t {
+                    Type::clay => {
+                        break;
+                    }
+                    _ => {}
+                },
+                None => {}
             }
             right.push(loc);
             x += 1;
@@ -227,10 +302,28 @@ impl Map {
     }
 
     fn count(&self) -> usize {
-        return self.squares.iter().filter(|(_k, t)| match t {
-            Type::dry | Type::water => true,
-            _ => false
-        }).count();
+        return self
+            .squares
+            .iter()
+            .filter(|(k, t)| match t {
+                Type::dry | Type::water => {
+                    k.y >= self.min.y
+                },
+                _ => false,
+            })
+            .count();
+    }
+    fn count_water(&self) -> usize {
+        return self
+            .squares
+            .iter()
+            .filter(|(k, t)| match t {
+                Type::water => {
+                    k.y >= self.min.y
+                },
+                _ => false,
+            })
+            .count();
     }
 }
 
@@ -242,7 +335,7 @@ impl ToString for Map {
             for x in self.min.x..=self.max.x {
                 let c = match self.squares.get(&Loc { x, y }) {
                     Some(t) => char::from(t),
-                    None => '.',
+                    None => ' ',
                 };
                 st.push(c);
             }
