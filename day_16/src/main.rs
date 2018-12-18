@@ -9,7 +9,8 @@ macro_rules! err {
 }
 
 fn main() {
-    let input = include_str!("input.txt");
+    // let input = include_str!("input.txt");
+    let input = include_str!("dad.txt");
     let start = Instant::now();
     part_a(input);
     let end = Instant::now();
@@ -38,6 +39,8 @@ fn part_b(input: &str) {
     let mut rule_set: HashMap<usize, HashSet<usize>> = HashMap::new();
     let rules: Vec<(usize, Vec<usize>)> =
         parsed.iter().map(|sample| sample.possible_opts()).collect();
+    // for each opt paired with the possible mappings, add them all to a hashmap
+    // though, this would make more sense if it found the minimum subset of the rules... oh well
     for (opt, possible) in rules {
         let entry = rule_set.entry(opt).or_default();
         for pos in possible {
@@ -80,11 +83,12 @@ fn part_b(input: &str) {
 
     let lines: Vec<&str> = input.lines().collect();
 
-    let test_prog: Vec<Inst> = lines[3187..]
+    // let test_prog: Vec<Inst> = lines[3187..]
+    let test_prog: Vec<Inst> = lines[3131..]
         .iter()
         .map(|line| Inst::from_str(line).unwrap())
         .collect();
-    
+    println!("Rules Map: {:#?}", rule_map);
     let mut state = vec![0, 0, 0, 0];
     for inst in test_prog {
         state = do_opt(OptCode::from(rule_map[&inst.code]), &inst, &state);
@@ -121,6 +125,7 @@ struct Sample {
 }
 
 impl Sample {
+    // get the possible opts for this single sample
     fn possible_opts(&self) -> (usize, Vec<usize>) {
         let mut opts = vec![];
         for i in 0..16 {
