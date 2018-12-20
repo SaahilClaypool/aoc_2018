@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 fn main() {
-    let input_st = include_str!("input.txt");
+    let input_st = include_str!("dad.txt");
     let mut input: Map = input_st.parse().unwrap();
     // println!("Map:\n{}", input.to_string());
     input.fill(&input.spring.clone());
-    // println!("Map:\n{}", input.to_string());
+    println!("Map:\n{}", input.to_string());
     let og_input: Map = input_st.parse().unwrap();
     for (l, t) in og_input.squares.iter() {
         match input.squares.get(l) {
