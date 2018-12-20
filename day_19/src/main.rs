@@ -9,6 +9,13 @@ macro_rules! err {
 }
 
 fn main() {
+    part_a();
+    part_b();
+}
+fn part_b() {
+    println!("sum of factors of 864: {}", all_factors(10551264));
+}
+fn part_a() {
     println!("Hello, world!");
     let inp = include_str!("../input.txt");
     let mut state: State = inp.parse().unwrap();
@@ -68,6 +75,10 @@ impl State {
     }
     fn step(&mut self) -> Vec<usize> {
         let cur = &self.commands[self.regs[self.ip]];
+        if self.regs[self.ip] == 3 {
+            // self.regs[5] = 16;
+            println!("regs {:?}", self.regs);
+        }
         // println!("command: {:?}", cur);
         // println!("executing : {:?} with regs {:?}", cur, self.regs);
         // println!("ip is {} {:?}", self.regs[self.ip], self.commands[self.regs[self.ip]]);
@@ -193,6 +204,16 @@ enum OptCode {
     Eqrr,
 }
 
+fn all_factors(num: usize) -> usize {
+    let mut s = 0;
+    for i in 1..=(num / 2) {
+        if num % i == 0 {
+            s += i; 
+        }
+    }
+    s + num
+}
+
 impl From<&str> for OptCode {
     fn from(st: &str) -> Self {
         match st {
@@ -257,5 +278,9 @@ mod tests {
         let mut state: State = inp.parse().unwrap();
         let res = state.execute();
         assert_eq!(res, 7);
+    }
+    #[test]
+    fn sum_factors() {
+        assert_eq!(31, all_factors(16));
     }
 }
