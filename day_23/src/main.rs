@@ -25,7 +25,10 @@ fn test_best_place_partition() {
     let state = State::from_str(input).unwrap();
     let best_pos = state.best_place();
     let dist = best_pos.dist(&Pos { x: 0, y: 0, z: 0 });
-    assert_eq!(dist, 36);
+    println!("dist to {:?} is {}", best_pos, dist);
+    let temp_bot = Bot {pos: best_pos, r: 0};
+    let count = state.bots.iter().filter(|bot| bot.in_range(&temp_bot)).count();
+    println!("temp bot in range of {}", count);
 }
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
@@ -33,6 +36,13 @@ struct Pos {
     x: i32,
     y: i32,
     z: i32,
+}
+
+fn test_point (pos: &Pos, bots: &[Bot]) -> usize {
+    bots.iter().filter(|bot| {
+        bot.in_range(&Bot {pos: *pos, r: 0}) 
+    })
+    .count()
 }
 
 impl Pos {
@@ -273,19 +283,19 @@ struct Space {
 }
 
 impl Space {
-    // fn in_range(&self, bot: &Bot) -> bool {
-    //     let d = bot.pos.dist(&self.pos.pos);
-    //     let sum_rad = bot.r + self.pos.r * 3;
-    //     let matches = d <= sum_rad;
-    //     if matches {
-    //         return true;
-    //     }
-    //     return false;
-    // }
-
     fn in_range(&self, bot: &Bot) -> bool {
-        return self.pos.in_range_sq(bot);
+        let d = bot.pos.dist(&self.pos.pos);
+        let sum_rad = bot.r + self.pos.r * 3;
+        let matches = d <= sum_rad;
+        if matches {
+            return true;
+        }
+        return false;
     }
+
+    // fn in_range(&self, bot: &Bot) -> bool {
+    //     return self.pos.in_range_sq(bot);
+    // }
 
     fn sub_spaces(&self) -> Vec<Self> {
         let bot = self.pos;
@@ -318,10 +328,12 @@ impl Space {
         // larger radius slightly worse
         let rad_score = -1 * self.pos.r as i64;
         // mostly just care about the number of matches
-        let match_score = (self.matches * 10000) as i64;
+        let match_score = (self.matches * 5000000) as i64;
         // let dist_score = 0;
+        // let dist_score =
+        //     -1 * (self.pos.pos.dist(&Pos { x: 0, y: 0, z: 0 }) as f64 / 100000000f64) as i64;
         let dist_score =
-            -1 * (self.pos.pos.dist(&Pos { x: 0, y: 0, z: 0 }) as f64 / 100000000f64) as i64;
+            -1 * (self.pos.pos.dist(&Pos { x: 0, y: 0, z: 0 }) as f64 / 1f64) as i64;
         rad_score + match_score + dist_score
     }
 }
