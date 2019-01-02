@@ -271,7 +271,7 @@ impl Ord for Group {
         } else if self.power() < other.power() {
             Ordering::Greater
         } else {
-            self.initiative.cmp(&other.initiative)
+            other.initiative.cmp(&self.initiative)
         }
     }
 }

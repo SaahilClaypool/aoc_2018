@@ -160,7 +160,7 @@ impl State {
         let ((mut from_gear, mut from_val), mut _val) = dists[&(Gear::Torch, self.target)];
         path.push(from_val);
         while (from_gear, from_val) != (Gear::Torch, Pos{x: 0, y: 0}) {
-            println!("from: {:?}", (from_gear, from_val));
+            // println!("from: {:?}", (from_gear, from_val));
             let ((gear, spot), _val) = dists[&(from_gear, from_val)];
             from_gear = gear;
             from_val = spot;
@@ -168,7 +168,7 @@ impl State {
         }
         path.reverse();
         for spot in path {
-            println!("{:?}", spot);
+            // println!("{:?}", spot);
         }
 
         // now lets path find
